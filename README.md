@@ -1,5 +1,9 @@
 # tmux-opencode-session-manager
 
+<video src="docs/tmux-opencode-session-manager.mp4" controls width="100%">
+  Your browser does not support the video tag.
+</video>
+
 Run many [opencode](https://opencode.ai) sessions across your
 projects, each in its own tmux session — then **list them, see which are done
 vs. still working, and jump to one** from a single popup.
