@@ -14,16 +14,24 @@ prefix="$(get_tmux_option @opencode_session_prefix 'opencode-')"
 emit_rows() {
   local now s state at path icon rank ago
   now=$(date +%s)
+
+  # Status comes from the opencode server API (busy/idle/retry/unknown).
+  local status_output
+  status_output=$("$DIR/opencode-status.sh" --list 2>/dev/null)
+
   tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^${prefix}" | while IFS= read -r s; do
-    state=$(tmux show-options -qv -t "$s" @opencode_state 2>/dev/null)
-    at=$(tmux show-options -qv -t "$s" @opencode_state_at 2>/dev/null)
+    state=$(printf '%s' "$status_output" | awk -v session="$s" -F'\t' '$1 == session {print $2}')
+    [ -z "$state" ] && state="unknown"
+    at=$(tmux show-options -qv -t "$s" @opencode_launched_at 2>/dev/null)
     path=$(tmux display-message -p -t "$s" '#{pane_current_path}' 2>/dev/null)
     case "$state" in
     busy) icon=$'\033[31m●\033[0m busy   ' rank=3 ;;     # red    - busy, leave it
     idle) icon=$'\033[32m●\033[0m idle   ' rank=1 ;;     # green  - done, your turn
-    *) icon=$'\033[90m●\033[0m   ?    ' rank=2 ;;        # grey   - unknown (no hook yet)
+    retry) icon=$'\033[33m●\033[0m retry  ' rank=2 ;;    # yellow - retrying
+    *) icon=$'\033[90m●\033[0m   ?    ' rank=2 ;;        # grey   - unknown (server not reachable)
     esac
     if [ -n "$at" ]; then ago="$(((now - at) / 60))m"; else ago='-'; fi
+    # age = minutes since the session was launched (shown for context only)
     # rank \t session \t icon \t age \t path   (rank/session hidden via --with-nth)
     printf '%s\t%s\t%s\t%5s\t%s\n' "$rank" "$s" "$icon" "$ago" "${path/#$HOME/~}"
     # rank asc (attention-needed floats up), then age asc so the session that
