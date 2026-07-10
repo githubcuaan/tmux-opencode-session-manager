@@ -4,7 +4,7 @@
 #   --list                 output status for all opencode sessions
 #   <tmux-session-name>    output status for that specific session
 #
-# Output format (tab-separated):  session_name \t status \t session_id
+# Output format (tab-separated):  session_name \t status \t session_id \t updated_ms
 # Status values: busy, idle, retry, unknown
 #   - busy/retry: session is in the live /session/status map
 #   - idle:      session exists in /session but not in the status map
@@ -28,14 +28,16 @@ get_port_from_session() {
   printf '%s' "$port"
 }
 
-# Find an opencode session id for a directory via the server API.
-get_session_id_from_api() {
-  local port="$1" dir="$2" sessions id
+# Find an opencode session id + last-updated time (ms) for a directory via the
+# server API. Output: "session_id \t updated_ms" (updated_ms may be empty).
+get_session_from_api() {
+  local port="$1" dir="$2" sessions out
   sessions=$(curl -s --connect-timeout "$timeout" "http://127.0.0.1:${port}/session" 2>/dev/null)
   [ -z "$sessions" ] && return 1
-  id=$(printf '%s' "$sessions" | jq -r --arg dir "$dir" '.[] | select(.directory == $dir) | .id' 2>/dev/null | head -1)
-  [ -z "$id" ] && return 1
-  printf '%s' "$id"
+  out=$(printf '%s' "$sessions" | jq -r --arg dir "$dir" \
+    '.[] | select(.directory == $dir) | "\(.id)\t\(.time.updated)"' 2>/dev/null | head -1)
+  [ -z "$out" ] && return 1
+  printf '%s' "$out"
 }
 
 # Resolve a status type for a session id.
@@ -57,29 +59,36 @@ get_session_status() {
 
 output_all_status() {
   tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^${prefix}" | while IFS= read -r s; do
-    local port session_id status path
+    local port session_id updated path status
 
     port=$(get_port_from_session "$s")
 
-    if [ -z "$port" ]; then printf '%s\t%s\t%s\n' "$s" "unknown" ""; continue; fi
+    if [ -z "$port" ]; then printf '%s\t%s\t%s\t\n' "$s" "unknown" ""; continue; fi
 
     path=$(tmux display-message -p -t "$s" '#{pane_current_path}' 2>/dev/null)
-    session_id=$(get_session_id_from_api "$port" "$path")
+    local api_out
+    api_out=$(get_session_from_api "$port" "$path")
 
-    if [ -z "$session_id" ]; then printf '%s\t%s\t%s\n' "$s" "unknown" ""; continue; fi
+    if [ -z "$api_out" ]; then printf '%s\t%s\t%s\t\n' "$s" "unknown" ""; continue; fi
+
+    session_id=$(printf '%s' "$api_out" | cut -f1)
+    updated=$(printf '%s' "$api_out" | cut -f2)
 
     status=$(get_session_status "$port" "$session_id")
-    printf '%s\t%s\t%s\n' "$s" "$status" "$session_id"
+    printf '%s\t%s\t%s\t%s\n' "$s" "$status" "$session_id" "$updated"
   done
 }
 
 output_session_status() {
-  local target_session="$1" port session_id status path
+  local target_session="$1" port session_id updated status path
   port=$(get_port_from_session "$target_session")
   [ -z "$port" ] && { printf 'unknown'; return; }
   path=$(tmux display-message -p -t "$target_session" '#{pane_current_path}' 2>/dev/null)
-  session_id=$(get_session_id_from_api "$port" "$path")
-  [ -z "$session_id" ] && { printf 'unknown'; return; }
+  local api_out
+  api_out=$(get_session_from_api "$port" "$path")
+  [ -z "$api_out" ] && { printf 'unknown'; return; }
+  session_id=$(printf '%s' "$api_out" | cut -f1)
+  updated=$(printf '%s' "$api_out" | cut -f2)
   status=$(get_session_status "$port" "$session_id")
   printf '%s' "$status"
 }
