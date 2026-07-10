@@ -25,10 +25,10 @@ emit_rows() {
     at=$(printf '%s' "$status_output" | awk -v session="$s" -F'\t' '$1 == session {print $4}')
     path=$(tmux display-message -p -t "$s" '#{pane_current_path}' 2>/dev/null)
     case "$state" in
-    busy) icon=$'\033[31m●\033[0m busy   ' rank=3 ;;     # red    - busy, leave it
-    idle) icon=$'\033[32m●\033[0m idle   ' rank=1 ;;     # green  - done, your turn
-    retry) icon=$'\033[33m●\033[0m retry  ' rank=2 ;;    # yellow - retrying
-    *) icon=$'\033[90m●\033[0m   ?    ' rank=2 ;;        # grey   - unknown (server not reachable)
+    busy) icon=$'\033[31m󱚝 \033[0m busy   ' rank=3 ;;     # red    - busy, leave it
+    idle) icon=$'\033[32m󱜙 \033[0m idle   ' rank=1 ;;     # green  - done, your turn
+    retry) icon=$'\033[33m󱚟 \033[0m retry  ' rank=2 ;;    # yellow - retrying
+    *) icon=$'\033[90m󱚡 \033[0m   ?    ' rank=2 ;;        # grey   - unknown (server not reachable)
     esac
     # Age = minutes since the session's last activity (time.updated from API).
     if [ -n "$at" ]; then ago="$(((now * 1000 - at) / 60000))m"; else ago='-'; fi
