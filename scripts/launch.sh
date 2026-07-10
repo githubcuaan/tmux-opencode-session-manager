@@ -31,4 +31,7 @@ tmux has-session -t "$session" 2>/dev/null ||
 # Record which window launched it, so the picker can jump back here later.
 [ -n "$window" ] && tmux set-option -t "$session" @opencode_origin "$window"
 
+# Record when the session was launched, so the picker can show its age.
+tmux set-option -t "$session" @opencode_launched_at "$(date +%s)"
+
 tmux display-popup -w "$w" -h "$h" -E "tmux attach-session -t $session"
