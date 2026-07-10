@@ -13,8 +13,8 @@ end up with a dozen of them and no way to tell which are finished without openin
 each one. This plugin gives you:
 
 - **A central picker** (`prefix` + `T`) listing every running opencode session.
-- **Live status** per session — `busy` / `idle` — driven by opencode hooks,
-  so you instantly see which need you.
+- **Live status** per session — `busy` / `idle` / `retry` — read from the
+  opencode server API, so you instantly see which need you.
 - **A live preview** of each session's screen right in the picker.
 - **Smart jump** — selecting a session switches your client to the window it
   was launched from, then resumes it in a popup over it.
@@ -22,8 +22,8 @@ each one. This plugin gives you:
   the current directory.
 - **Quick kill** (`ctrl-x`) of finished sessions from the picker.
 
-Status is optional: without the hooks the picker still lists, previews, jumps,
-and kills — sessions just show `?` instead of a color.
+Status is automatic: the picker queries each running opencode server for its
+state. If a server is not reachable, that session shows `?` instead of a color.
 
 ## Prerequisites
 
@@ -76,36 +76,27 @@ Inside the picker:
 
 Sessions needing your attention (`idle`) sort to the top.
 
-## Status setup (optional, recommended)
+## Status setup
 
-Status comes from opencode hooks that stamp each session's state onto its tmux
-session. Add the following to your opencode hooks configuration.
+Session status (`busy` / `idle` / `retry`) is detected **automatically** via the
+opencode server API — no configuration required.
 
-Copy `hooks.yaml` from this repo to `~/.config/opencode/hook/hooks.yaml`:
+When you open the picker, it finds each session's server port (from the tmux
+pane's process), calls `GET /session/status`, and shows the real-time state.
+If a server is not reachable, the session shows `?`.
 
-```yaml
-hooks:
-  - id: opencode-state-busy
-    event: tool.before.*
-    actions:
-      - bash: "$HOME/.config/tmux/plugins/tmux-opencode-session-manager/scripts/state.sh busy"
+### How it works
 
-  - id: opencode-state-idle
-    event: session.idle
-    actions:
-      - bash: "$HOME/.config/tmux/plugins/tmux-opencode-session-manager/scripts/state.sh idle"
+1. Each opencode session runs on a unique port (set by `launch.sh`).
+2. The picker finds the port from the tmux pane's process cmdline.
+3. It calls `GET /session/status` to get the `busy` / `idle` / `retry` state.
+4. Results are color-coded in the picker.
+
+Set the API timeout (seconds) with:
+
+```tmux
+set -g @opencode_api_timeout '2'
 ```
-
-The state machine:
-
-| Event           | State     | Meaning                   |
-| --------------- | --------- | ------------------------- |
-| `tool.before.*` | 🔴 `busy` | Working — leave it        |
-| `session.idle`  | 🟢 `idle` | Turn finished — your move |
-| _(no hook)_     | ⚪ `?`    | Unknown (no hook yet)     |
-
-> Sessions that are already running start reporting status on their next event
-> once the hooks are added.
 
 ## Options
 
@@ -118,6 +109,7 @@ set -g @opencode_command        'opencode' # command run in new sessions
 set -g @opencode_session_prefix 'opencode-' # tmux session name prefix
 set -g @opencode_popup_width    '90%'      # popup width
 set -g @opencode_popup_height   '85%'      # popup height
+set -g @opencode_api_timeout     '2'        # opencode server API timeout (s)
 ```
 
 ## How it works
@@ -125,11 +117,12 @@ set -g @opencode_popup_height   '85%'      # popup height
 - The **launcher** creates a detached `opencode-<hash-of-dir>` tmux session
   running `opencode --port <port>`, records the window it came from in
   `@opencode_origin`, and attaches to it in a popup.
-- The **hooks** set `@opencode_state` / `@opencode_state_at` on each session
-  as opencode works.
-- The **picker** lists sessions matching the prefix, reads their state and a
-  live `capture-pane` preview, and on selection moves your client to the
-  session's origin window before resuming it in the popup.
+- The **status** is read from the opencode server API (`GET /session/status`)
+  by `scripts/opencode-status.sh`, which maps each tmux session to its server
+  port via the pane's process.
+- The **picker** lists sessions matching the prefix, reads their live API
+  status and a `capture-pane` preview, and on selection moves your client to
+  the session's origin window before resuming it in the popup.
 - Pressing `prefix` + `T` **from inside a session popup** detaches that popup
   first (closing it), then reopens the picker full-size on the outer host
   client — so you never end up with a cramped popup-in-popup.
