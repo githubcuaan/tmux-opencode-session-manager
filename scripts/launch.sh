@@ -22,7 +22,7 @@ if [[ "$(tmux display-message -p '#S')" == "$prefix"* ]]; then
 fi
 
 # 1. Delegate session creation/check to start.sh
-"$DIR/start.sh" "$path" "$window"
+"$DIR/start.sh" "$path" "$window" || exit 1
 
 # 2. Open popup and attach to the session
 tmux display-popup -w "$w" -h "$h" -E "tmux attach-session -t $session"

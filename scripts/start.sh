@@ -15,14 +15,21 @@ cmd="$(get_tmux_option @opencode_command 'opencode')"
 
 session="${prefix}$(session_hash "$path")"
 
-# Derive a port from the path hash
-path_hash=$(printf '%s' "$path" | md5sum | cut -c1-8)
-port=$((16#${path_hash:0:4} % 55536 + 10000))
-
 # Create a background session if it does not exist yet
 if ! tmux has-session -t "$session" 2>/dev/null; then
-  tmux new-session -d -s "$session" -c "$path" "$cmd --port $port"
+  directory=$(cd "$path" && pwd -P) || exit 1
+  payload=$(jq -n --arg directory "$directory" '{location: {directory: $directory}}') || exit 1
+
+  response=$(opencode_api post /api/session --data "$payload") || exit 1
+  session_id=$(printf '%s' "$response" | jq -er '.data.id') || exit 1
+  valid_session_id "$session_id" || exit 1
+
+  # IDs are validated above; shell configuration in $cmd is user-controlled.
+  tmux new-session -d -s "$session" -c "$path" "$cmd --session $session_id" || exit 1
+  tmux set-option -t "$session" @opencode_session_id "$session_id" || exit 1
 fi
 
 # Record the origin window if provided
-[ -n "$window" ] && tmux set-option -t "$session" @opencode_origin "$window"
+if [ -n "$window" ]; then
+  tmux set-option -t "$session" @opencode_origin "$window"
+fi
