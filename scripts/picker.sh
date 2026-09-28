@@ -26,12 +26,11 @@ emit_rows() {
     path=$(tmux display-message -p -t "$s" '#{pane_current_path}' 2>/dev/null)
     case "$state" in
     busy) icon=$'\033[31m󱚝 \033[0m busy   ' rank=3 ;;     # red    - busy, leave it
-    idle) icon=$'\033[32m󱜙 \033[0m idle   ' rank=1 ;;     # green  - done, your turn
-    retry) icon=$'\033[33m󱚟 \033[0m retry  ' rank=2 ;;    # yellow - retrying
+    idle) icon=$'\033[32m󱜙 \033[0m idle   ' rank=1 ;;     # green  - no foreground drain
     *) icon=$'\033[90m󱚡 \033[0m   ?    ' rank=2 ;;        # grey   - unknown (server not reachable)
     esac
     # Age = minutes since the session's last activity (time.updated from API).
-    if [ -n "$at" ]; then ago="$(((now * 1000 - at) / 60000))m"; else ago='-'; fi
+    if [[ "$at" =~ ^[0-9]{1,15}$ ]]; then ago="$(((now * 1000 - 10#$at) / 60000))m"; else ago='-'; fi
     # rank \t session \t icon \t age \t path   (rank/session hidden via --with-nth)
     printf '%s\t%s\t%s\t%5s\t%s\n' "$rank" "$s" "$icon" "$ago" "${path/#$HOME/~}"
     # rank asc (attention-needed floats up), then age asc so the session that
@@ -53,10 +52,10 @@ fi
 self="${BASH_SOURCE[0]}"
 export FZF_DEFAULT_OPTS=''
 sel=$(emit_rows | fzf --ansi --delimiter='\t' --with-nth=3,4,5 \
-  --reverse --cycle --header='Opencode sessions · 󰿄 enter: jump · 󰧧 ctrl-x: kill ·  ctrl-r: restart' \
+  --reverse --cycle --header='Bound conversations · 󰿄 enter: jump · 󰧧 ctrl-x: close TUI ·  ctrl-r: reopen TUI' \
   --preview="tmux capture-pane -ept {2}" --preview-window='bottom,70%' \
   --bind="ctrl-x:execute-silent(tmux kill-session -t {2})+reload($self --list)" \
-  --bind="ctrl-r:execute-silent(\"$DIR/restart.sh\" {2} &)+reload(sleep 0.2; $self --list)")
+  --bind="ctrl-r:execute-silent(\"$DIR/restart.sh\" {2})+reload($self --list)")
 
 [ -z "$sel" ] && exit 0
 target=$(printf '%s' "$sel" | cut -f2)
