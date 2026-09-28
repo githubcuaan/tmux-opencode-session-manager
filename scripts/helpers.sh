@@ -29,3 +29,22 @@ session_hash() {
   fi
   printf '%s' "${out%% *}" | cut -c1-8
 }
+
+# Full API command prefix; override for wrappers with different TUI/API syntax.
+get_opencode_api_command() {
+  local cmd
+  cmd="$(get_tmux_option @opencode_command 'opencode')"
+  get_tmux_option @opencode_api_command "$cmd api"
+}
+
+opencode_api() {
+  local script_dir timeout cmd
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  timeout="$(get_tmux_option @opencode_api_timeout '2')"
+  cmd="$(get_opencode_api_command)"
+  python3 "$script_dir/opencode-api.py" "$timeout" "$cmd" request "$@"
+}
+
+valid_session_id() {
+  [[ "$1" =~ ^ses[a-zA-Z0-9_-]+$ ]]
+}
