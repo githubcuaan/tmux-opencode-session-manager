@@ -1,14 +1,25 @@
 #!/usr/bin/env bash
-# Restart an opencode session: kill and relaunch with same config.
+# Reopen the TUI for the bound conversation; does not interrupt server execution.
 # Usage: restart.sh <session-name>
 set -uo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=helpers.sh
+. "$DIR/helpers.sh"
 
 session="$1"
 
-path=$(tmux display-message -p -t "$session" '#{pane_current_path}' 2>/dev/null)
-origin=$(tmux show-options -qv -t "$session" @opencode_origin 2>/dev/null)
+path=$(tmux display-message -p -t "$session" '#{pane_current_path}' 2>/dev/null) || exit 1
+session_id=$(tmux show-options -qv -t "$session" @opencode_session_id 2>/dev/null)
 
-tmux kill-session -t "$session" 2>/dev/null
+# Preserve unbound legacy TUIs instead of accidentally replacing their conversation.
+if ! valid_session_id "$session_id"; then
+  tmux display-message 'Bind an OpenCode session ID before restarting this TUI'
+  exit 1
+fi
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-"$DIR/start.sh" "$path" "$origin"
+# Verify before closing anything. Respawning preserves the tmux name, binding,
+# origin, and attached clients even when a conversation has moved directories.
+response=$(opencode_api get "/api/session/$session_id") || exit 1
+printf '%s' "$response" | jq -e --arg id "$session_id" '.data.id == $id' >/dev/null || exit 1
+cmd="$(get_tmux_option @opencode_command 'opencode')"
+tmux respawn-pane -k -t "$session" -c "$path" "$cmd --session $session_id"
