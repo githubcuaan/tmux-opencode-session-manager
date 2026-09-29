@@ -123,8 +123,20 @@ set -g @opencode_api_timeout '2'
 
 This is a total deadline for a status refresh, including queued metadata calls;
 unfinished lookups show `?`. Individual launch/bind API requests use the same
-timeout. Increase it for slow service startup or many sessions. Timed-out CLI
+timeout. Increase it for slow requests or many sessions. Timed-out CLI
 process groups are terminated and the child process reaped on Linux and macOS.
+
+Before creating a conversation, the launcher calls `/api/info` using the same
+configured API command. CLI discovery starts the local shared service if needed.
+This readiness request has a separate 30-second timeout for cold startup:
+
+```tmux
+set -g @opencode_startup_timeout '30'
+```
+
+With an explicit server URL, this checks that server instead. Startup/connection
+failure displays a tmux message and stops before creating a session or opening
+the popup. Reattaching an existing tmux session skips this readiness request.
 
 ## Options
 
@@ -139,6 +151,7 @@ set -g @opencode_session_prefix 'opencode-' # tmux session name prefix
 set -g @opencode_popup_width    '90%'      # popup width
 set -g @opencode_popup_height   '85%'      # popup height
 set -g @opencode_api_timeout    '2'        # API request / status refresh deadline (s)
+set -g @opencode_startup_timeout '30'      # server readiness deadline before creation (s)
 ```
 
 Custom wrappers must support the `--session <id>` TUI flag and API subcommand.
