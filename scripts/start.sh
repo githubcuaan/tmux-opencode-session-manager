@@ -20,6 +20,16 @@ if ! tmux has-session -t "$session" 2>/dev/null; then
   directory=$(cd "$path" && pwd -P) || exit 1
   payload=$(jq -n --arg directory "$directory" '{location: {directory: $directory}}') || exit 1
 
+  # CLI discovery starts the shared service if needed. Allow cold startup to
+  # finish before sending the session-creation request with its shorter timeout.
+  startup_timeout="$(get_tmux_option @opencode_startup_timeout '30')"
+  if ! opencode_api_with_timeout "$startup_timeout" get /api/info >/dev/null; then
+    message="OpenCode server startup/connection failed (timeout: ${startup_timeout}s). Check server settings or increase @opencode_startup_timeout."
+    printf '%s\n' "$message" >&2
+    tmux display-message "$message"
+    exit 1
+  fi
+
   response=$(opencode_api post /api/session --data "$payload") || exit 1
   session_id=$(printf '%s' "$response" | jq -er '.data.id') || exit 1
   valid_session_id "$session_id" || exit 1
