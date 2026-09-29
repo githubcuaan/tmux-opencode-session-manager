@@ -13,7 +13,7 @@ session_id=$(tmux show-options -qv -t "$session" @opencode_session_id 2>/dev/nul
 
 # Preserve unbound legacy TUIs instead of accidentally replacing their conversation.
 if ! valid_session_id "$session_id"; then
-  tmux display-message 'Bind an OpenCode session ID before restarting this TUI'
+  tmux display-message 'Select a conversation in OpenCode with the auto-bind plugin enabled before restarting'
   exit 1
 fi
 
