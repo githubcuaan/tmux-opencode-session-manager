@@ -84,21 +84,40 @@ stores its ID in the tmux option `@opencode_session_id`, and opens
 `opencode --session <id>` in the project directory. Existing tmux sessions are
 reattached without creating another conversation.
 
-Status always describes this **bound conversation**. Switching or creating a
-conversation inside the TUI does not automatically update the binding. Rebind
-explicitly after switching; the helper validates the ID against the same server:
+Status describes the **bound conversation**. The companion TUI plugin below
+automatically updates the binding when `context.ui.router.current()` changes:
+switching tabs makes status follow the conversation being viewed. Returning to
+the home screen clears the binding until a conversation is selected.
 
-```sh
-~/.tmux/plugins/tmux-opencode-session-manager/scripts/bind-session.sh 'opencode-<hash>' ses_...
+Reopen `prefix + T` to refresh status after switching conversations. This also
+works when the TUI tab strip is disabled: binding follows the current route.
+
+### Install the TUI companion
+
+Add this repository's `opencode-plugin` directory to the existing `plugins`
+array in `~/.config/opencode/cli.json` (or `$XDG_CONFIG_HOME/opencode/cli.json`):
+
+```json
+{
+  "plugins": [
+    "/absolute/path/to/tmux-opencode-session-manager/opencode-plugin"
+  ]
+}
 ```
 
-Find tmux names with `tmux list-sessions`; list OpenCode conversations with
-`opencode api get /api/session` (paginated). Rebinding changes status tracking
-and the conversation reopened by `ctrl-r`; it does not navigate the current TUI.
+Preserve your other settings and plugin entries. OpenCode reloads CLI settings;
+reopen the TUI if the companion has not loaded yet.
 
-Existing sessions created before this migration display `?` until bound. Reopen
-them with `ctrl-r` after binding to connect the TUI to that conversation on the
-shared V2 service. Unbound sessions cannot be restarted through the picker.
+The companion runs locally inside each TUI, using `TMUX_PANE` to identify its
+managed tmux session. It checks focus every 300 ms and updates
+`@opencode_session_id` only when the viewed conversation changes. It does not
+publish tab lists or query server history. Separate project popup sessions keep
+independent bindings, even when they use the same project directory.
+
+Without the companion, status follows the conversation created by the launcher;
+switching conversations cannot update that binding. Existing unbound sessions
+display `?`; load the companion and select a conversation to bind automatically.
+Unbound sessions cannot be restarted through the picker.
 
 ### How it works
 
@@ -122,7 +141,7 @@ set -g @opencode_api_timeout '2'
 ```
 
 This is a total deadline for a status refresh, including queued metadata calls;
-unfinished lookups show `?`. Individual launch/bind API requests use the same
+unfinished lookups show `?`. Individual launch/restart API requests use the same
 timeout. Increase it for slow requests or many sessions. Timed-out CLI
 process groups are terminated and the child process reaped on Linux and macOS.
 
