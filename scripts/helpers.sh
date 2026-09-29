@@ -38,9 +38,15 @@ get_opencode_api_command() {
 }
 
 opencode_api() {
+  opencode_api_with_timeout "$(get_tmux_option @opencode_api_timeout '2')" "$@"
+}
+
+# Startup may need more time than routine API calls or picker refreshes.
+opencode_api_with_timeout() {
   local script_dir timeout cmd
+  timeout="$1"
+  shift
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  timeout="$(get_tmux_option @opencode_api_timeout '2')"
   cmd="$(get_opencode_api_command)"
   python3 "$script_dir/opencode-api.py" "$timeout" "$cmd" request "$@"
 }
