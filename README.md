@@ -221,8 +221,6 @@ Thank you for the brilliant design and clean code that made this adaptation poss
 - **[opvi.nvim](https://github.com/githubcuaan/opvi)** — a Neovim Ask UI for
   OpenCode V2, bound to the conversations managed by this plugin.
 
-https://github.com/user-attachments/assets/c5dce014-e445-4495-abe1-15d3ed1b5850
-
 ## License
 
 [MIT](LICENSE) © Takuya Matsuyama
