@@ -169,6 +169,8 @@ set -g @opencode_api_command    ''         # empty: @opencode_command followed b
 set -g @opencode_session_prefix 'opencode-' # tmux session name prefix
 set -g @opencode_popup_width    '90%'      # popup width
 set -g @opencode_popup_height   '85%'      # popup height
+set -g @opencode_popup_border_lines ''        # -b: single|rounded|double|heavy|simple|padded|none
+set -g @opencode_popup_border_style ''        # -S: style, vd 'fg=red,bg=black,bold'
 set -g @opencode_api_timeout    '2'        # API request / status refresh deadline (s)
 set -g @opencode_startup_timeout '30'      # server readiness deadline before creation (s)
 ```

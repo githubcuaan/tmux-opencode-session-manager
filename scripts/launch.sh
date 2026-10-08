@@ -12,6 +12,9 @@ window="${2:-}"
 prefix="$(get_tmux_option @opencode_session_prefix 'opencode-')"
 w="$(get_tmux_option @opencode_popup_width '90%')"
 h="$(get_tmux_option @opencode_popup_height '90%')"
+# Border line type (-b) and border style (-S); empty keeps tmux defaults.
+bl="$(get_tmux_option @opencode_popup_border_lines '')"
+bs="$(get_tmux_option @opencode_popup_border_style "$(get_tmux_option @opencode_popup_border '')")"
 
 session="${prefix}$(session_hash "$path")"
 
@@ -25,4 +28,5 @@ fi
 "$DIR/start.sh" "$path" "$window" || exit 1
 
 # 2. Open popup and attach to the session
-tmux display-popup -w "$w" -h "$h" -E "tmux attach-session -t $session"
+# shellcheck disable=SC2086  # empty vars expand to nothing
+tmux display-popup -w "$w" -h "$h" ${bl:+-b "$bl"} ${bs:+-S "$bs"} -E "tmux attach-session -t $session"

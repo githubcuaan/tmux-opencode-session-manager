@@ -8,6 +8,9 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 prefix="$(get_tmux_option @opencode_session_prefix 'opencode-')"
 w="$(get_tmux_option @opencode_popup_width '90%')"
 h="$(get_tmux_option @opencode_popup_height '90%')"
+# Border line type (-b) and border style (-S); empty keeps tmux defaults.
+bl="$(get_tmux_option @opencode_popup_border_lines '')"
+bs="$(get_tmux_option @opencode_popup_border_style "$(get_tmux_option @opencode_popup_border '')")"
 
 # The session of a client attached to a prefixed session — i.e. the popup we are
 # inside, if any. Empty when invoked from a normal (non-popup) pane.
@@ -39,8 +42,9 @@ tmux set-option -g @opencode_parent "$host"
 
 # Host the picker on the outer client. -c is honored because that client has no
 # popup open now; fall back to the default client if none was found.
+# shellcheck disable=SC2086  # empty vars expand to nothing
 if [ -n "$host" ]; then
-  tmux display-popup -c "$host" -w "$w" -h "$h" -E "$DIR/picker.sh"
+  tmux display-popup -c "$host" -w "$w" -h "$h" ${bl:+-b "$bl"} ${bs:+-S "$bs"} -E "$DIR/picker.sh"
 else
-  tmux display-popup -w "$w" -h "$h" -E "$DIR/picker.sh"
+  tmux display-popup -w "$w" -h "$h" ${bl:+-b "$bl"} ${bs:+-S "$bs"} -E "$DIR/picker.sh"
 fi
