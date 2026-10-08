@@ -1,6 +1,6 @@
 # tmux-opencode-session-manager
 
-https://github.com/user-attachments/assets/37670340-06f7-4b57-ab49-84118897be47
+https://github.com/user-attachments/assets/4ef70f60-e4f0-40ee-914a-4c4057ba234e
 
 Run many [opencode](https://opencode.ai) sessions across your
 projects, each in its own tmux session — then **list their bound conversations,
