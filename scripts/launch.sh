@@ -29,4 +29,4 @@ fi
 
 # 2. Open popup and attach to the session
 # shellcheck disable=SC2086  # empty vars expand to nothing
-tmux display-popup -w "$w" -h "$h" ${bl:+-b "$bl"} ${bs:+-S "$bs"} -E "tmux attach-session -t $session"
+tmux display-popup -T '󱜙 agent' -w "$w" -h "$h" ${bl:+-b "$bl"} ${bs:+-S "$bs"} -E "tmux attach-session -t $session"

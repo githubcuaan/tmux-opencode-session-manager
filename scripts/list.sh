@@ -44,7 +44,7 @@ tmux set-option -g @opencode_parent "$host"
 # popup open now; fall back to the default client if none was found.
 # shellcheck disable=SC2086  # empty vars expand to nothing
 if [ -n "$host" ]; then
-  tmux display-popup -c "$host" -w "$w" -h "$h" ${bl:+-b "$bl"} ${bs:+-S "$bs"} -E "$DIR/picker.sh"
+  tmux display-popup -T "󱚟 agent's list" -c "$host" -w "$w" -h "$h" ${bl:+-b "$bl"} ${bs:+-S "$bs"} -E "$DIR/picker.sh"
 else
-  tmux display-popup -w "$w" -h "$h" ${bl:+-b "$bl"} ${bs:+-S "$bs"} -E "$DIR/picker.sh"
+  tmux display-popup -T "󱚟 agent's list" -w "$w" -h "$h" ${bl:+-b "$bl"} ${bs:+-S "$bs"} -E "$DIR/picker.sh"
 fi
