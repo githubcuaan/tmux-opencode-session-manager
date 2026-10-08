@@ -99,9 +99,7 @@ array in `~/.config/opencode/cli.json` (or `$XDG_CONFIG_HOME/opencode/cli.json`)
 
 ```json
 {
-  "plugins": [
-    "/absolute/path/to/tmux-opencode-session-manager/opencode-plugin"
-  ]
+  "plugins": ["/absolute/path/to/tmux-opencode-session-manager/opencode-plugin"]
 }
 ```
 
@@ -217,6 +215,13 @@ by **[Takuya Matsuyama (craftzdog)](https://github.com/craftzdog)** — the orig
 idea and implementation for managing Claude Code sessions across projects.
 
 Thank you for the brilliant design and clean code that made this adaptation possible.
+
+## Related projects
+
+- **[opvi.nvim](https://github.com/githubcuaan/opvi)** — a Neovim Ask UI for
+  OpenCode V2, bound to the conversations managed by this plugin.
+
+https://github.com/user-attachments/assets/c5dce014-e445-4495-abe1-15d3ed1b5850
 
 ## License
 
