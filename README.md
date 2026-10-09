@@ -79,8 +79,10 @@ completion or that background work has stopped.
 
 ## Status setup
 
-Each new launcher session creates an OpenCode conversation through the V2 API,
-stores its ID in the tmux option `@opencode_session_id`, and opens
+Each new launcher session first checks saved OpenCode conversations through the
+V2 API and reuses the newest non-archived root conversation in the same directory.
+Only when none exists does it create a conversation. Lookup failures stop launch
+instead of creating duplicates. It stores the ID in `@opencode_session_id` and opens
 `opencode --session <id>` in the project directory. Existing tmux sessions are
 reattached without creating another conversation.
 

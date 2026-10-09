@@ -30,8 +30,27 @@ if ! tmux has-session -t "$session" 2>/dev/null; then
     exit 1
   fi
 
-  response=$(opencode_api post /api/session --data "$payload") || exit 1
-  session_id=$(printf '%s' "$response" | jq -er '.data.id') || exit 1
+  # Search saved conversations before creating one, including later pages when
+  # the newest page contains only archived sessions. Encode paths for the URL.
+  query=$(jq -nr --arg directory "$directory" '$directory | @uri') || exit 1
+  route="/api/session?directory=$query&parentID=null&order=desc"
+  session_id=""
+  while :; do
+    response=$(opencode_api get "$route") || exit 1
+    printf '%s' "$response" | jq -e '.data | type == "array"' >/dev/null || exit 1
+    session_id=$(printf '%s' "$response" | jq -r --arg directory "$directory" '
+      [.data[] | select(.location.directory == $directory)
+        | select(.parentID == null and .time.archived == null)][0].id // empty') || exit 1
+    [ -n "$session_id" ] && break
+    cursor=$(printf '%s' "$response" | jq -r '.cursor.next // empty') || exit 1
+    [ -z "$cursor" ] && break
+    cursor=$(jq -nr --arg cursor "$cursor" '$cursor | @uri') || exit 1
+    route="/api/session?directory=$query&parentID=null&order=desc&cursor=$cursor"
+  done
+  if [ -z "$session_id" ]; then
+    response=$(opencode_api post /api/session --data "$payload") || exit 1
+    session_id=$(printf '%s' "$response" | jq -er '.data.id') || exit 1
+  fi
   valid_session_id "$session_id" || exit 1
 
   # IDs are validated above; shell configuration in $cmd is user-controlled.
