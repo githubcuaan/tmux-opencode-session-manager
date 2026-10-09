@@ -79,12 +79,10 @@ completion or that background work has stopped.
 
 ## Status setup
 
-Each new launcher session first checks saved OpenCode conversations through the
-V2 API and reuses the newest non-archived root conversation in the same directory.
-Only when none exists does it create a conversation. Lookup failures stop launch
-instead of creating duplicates. It stores the ID in `@opencode_session_id` and opens
-`opencode --session <id>` in the project directory. Existing tmux sessions are
-reattached without creating another conversation.
+The launcher opens `opencode` in the project directory without API requests or
+forcing a conversation ID. Select or create conversations inside OpenCode;
+the companion binds the viewed conversation automatically. Existing tmux
+sessions are reattached without starting another TUI.
 
 Status describes the **bound conversation**. The companion TUI plugin below
 automatically updates the binding when `context.ui.router.current()` changes:
@@ -114,9 +112,8 @@ managed tmux session. It checks focus every 300 ms and updates
 publish tab lists or query server history. Separate project popup sessions keep
 independent bindings, even when they use the same project directory.
 
-Without the companion, status follows the conversation created by the launcher;
-switching conversations cannot update that binding. Existing unbound sessions
-display `?`; load the companion and select a conversation to bind automatically.
+Without the companion, new sessions remain unbound and display `?`;
+load the companion and select a conversation to bind automatically.
 Unbound sessions cannot be restarted through the picker.
 
 ### How it works
@@ -141,21 +138,12 @@ set -g @opencode_api_timeout '2'
 ```
 
 This is a total deadline for a status refresh, including queued metadata calls;
-unfinished lookups show `?`. Individual launch/restart API requests use the same
+unfinished lookups show `?`. Individual restart API requests use the same
 timeout. Increase it for slow requests or many sessions. Timed-out CLI
 process groups are terminated and the child process reaped on Linux and macOS.
 
-Before creating a conversation, the launcher calls `/api/info` using the same
-configured API command. CLI discovery starts the local shared service if needed.
-This readiness request has a separate 30-second timeout for cold startup:
-
-```tmux
-set -g @opencode_startup_timeout '30'
-```
-
-With an explicit server URL, this checks that server instead. Startup/connection
-failure displays a tmux message and stops before creating a session or opening
-the popup. Reattaching an existing tmux session skips this readiness request.
+The launcher delegates server startup and connection handling to the OpenCode
+TUI. It does not perform an API readiness check.
 
 ## Options
 
@@ -172,7 +160,6 @@ set -g @opencode_popup_height   '85%'      # popup height
 set -g @opencode_popup_border_lines ''        # -b: single|rounded|double|heavy|simple|padded|none
 set -g @opencode_popup_border_style ''        # -S: style, vd 'fg=red,bg=black,bold'
 set -g @opencode_api_timeout    '2'        # API request / status refresh deadline (s)
-set -g @opencode_startup_timeout '30'      # server readiness deadline before creation (s)
 ```
 
 Custom wrappers must support the `--session <id>` TUI flag and API subcommand.
@@ -191,9 +178,9 @@ private server. Default shared-service web access is available via `opencode pai
 ## How it works
 
 - The **launcher** creates a detached `opencode-<hash-of-dir>` tmux session
-  running `opencode --session <id>`, records the conversation in
-  `@opencode_session_id` and origin window in `@opencode_origin`, and attaches
-  to it in a popup.
+  running `opencode`, records the origin window in `@opencode_origin`, and attaches
+  to it in a popup. The companion updates `@opencode_session_id` after a
+  conversation is selected.
 - The **status** wrapper `scripts/opencode-status.sh` reads bindings, then uses
   `scripts/opencode-api.py` for bounded V2 CLI requests and metadata lookups.
 - The **picker** lists sessions matching the prefix, reads their live API
