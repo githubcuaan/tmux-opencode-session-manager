@@ -114,7 +114,11 @@ independent bindings, even when they use the same project directory.
 
 Without the companion, new sessions remain unbound and display `?`;
 load the companion and select a conversation to bind automatically.
-Unbound sessions cannot be restarted through the picker.
+Unbound running TUIs cannot be restarted through the picker. After a tmux restore,
+Ctrl-R can reopen OpenCode in a pane containing only a shell. If the binding was
+preserved, it opens that conversation; otherwise it opens the normal TUI without
+guessing which saved conversation to resume. Shell recovery delegates cold server
+startup to the TUI and does not require a successful API request first.
 
 ### How it works
 

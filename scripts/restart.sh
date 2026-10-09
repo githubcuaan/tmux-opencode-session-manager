@@ -10,6 +10,20 @@ session="$1"
 
 path=$(tmux display-message -p -t "$session" '#{pane_current_path}' 2>/dev/null) || exit 1
 session_id=$(tmux show-options -qv -t "$session" @opencode_session_id 2>/dev/null)
+pane_command=$(tmux display-message -p -t "$session" '#{pane_current_command}' 2>/dev/null) || exit 1
+cmd="$(get_tmux_option @opencode_command 'opencode')"
+
+# Restore tools may recreate only the shell and lose custom session options.
+# Let the TUI handle cold service startup; never guess a saved conversation.
+case "$pane_command" in
+  bash|zsh|fish|sh|dash|ksh|mksh|tcsh|csh|nu)
+    if valid_session_id "$session_id"; then
+      cmd="$cmd --session $session_id"
+    fi
+    tmux respawn-pane -k -t "$session" -c "$path" "$cmd"
+    exit $?
+    ;;
+esac
 
 # Preserve unbound legacy TUIs instead of accidentally replacing their conversation.
 if ! valid_session_id "$session_id"; then
@@ -21,5 +35,4 @@ fi
 # origin, and attached clients even when a conversation has moved directories.
 response=$(opencode_api get "/api/session/$session_id") || exit 1
 printf '%s' "$response" | jq -e --arg id "$session_id" '.data.id == $id' >/dev/null || exit 1
-cmd="$(get_tmux_option @opencode_command 'opencode')"
 tmux respawn-pane -k -t "$session" -c "$path" "$cmd --session $session_id"
